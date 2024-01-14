@@ -8,6 +8,7 @@
  * Copyright 2021 Rob Loach (@RobLoach)
  */
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,13 +19,18 @@
 
 #include "libretro.h"
 
+namespace py = pybind11;
 
 int width = 0;
 int height = 0;
+void* video_data;
 
 static struct {
   void * handle;
   bool initialized;
+
+  const void* video_data = nullptr;
+  size_t video_pitch = 0;
 
   void (*retro_init)(void);
   void (*retro_deinit)(void);
@@ -34,20 +40,21 @@ static struct {
   void (*retro_set_controller_port_device)(unsigned port, unsigned device);
   void (*retro_reset)(void);
   void (*retro_run)(void);
-  // size_t retro_serialize_size(void);
-  // bool retro_serialize(void *data, size_t size);
-  // bool retro_unserialize(const void *data, size_t size);
-  // void retro_cheat_reset(void);
-  // void retro_cheat_set(unsigned index, bool enabled, const char *code);
+  size_t (*retro_serialize_size)(void);
+  bool (*retro_serialize)(void *data, size_t size);
+  bool (*retro_unserialize)(const void *data, size_t size);
+  void (*retro_cheat_reset)(void);
+  void (*retro_cheat_set)(unsigned index, bool enabled, const char *code);
   bool (*retro_load_game)(const struct retro_game_info* game);
-  // bool retro_load_game_special(
+  // bool (*retro_load_game_special)(
   //   unsigned game_type,
   //   const struct retro_game_info *info,
   //   size_t num_info);
   void (*retro_unload_game)(void);
-  // unsigned retro_get_region(void);
-  // void *retro_get_memory_data(unsigned id);
-  // size_t retro_get_memory_size(unsigned id);
+  unsigned (*retro_get_region)(void);
+  void * (*retro_get_memory_data)(unsigned id);
+  size_t (*retro_get_memory_size)(unsigned id);
+
 }
 g_retro;
 
@@ -169,6 +176,13 @@ static void core_video_refresh(
   (void)width;
   (void)height;
   (void)pitch;
+
+  if (data)
+    g_retro.video_data = data;
+  
+  if (pitch) {
+    g_retro.video_pitch = pitch;
+  }
 }
 
 static void core_input_poll(void) {
@@ -206,7 +220,7 @@ static bool core_load(const char * sofile) {
   void (*set_audio_sample)(retro_audio_sample_t) = NULL;
   void (*set_audio_sample_batch)(retro_audio_sample_batch_t) = NULL;
 
-  memset( & g_retro, 0, sizeof(g_retro));
+  memset( (void *) & g_retro, 0, sizeof(g_retro));
   g_retro.handle = dlopen(sofile, RTLD_LAZY);
 
   if (!g_retro.handle) {
@@ -322,6 +336,39 @@ static void core_unload() {
   }
 }
 
+static void _retro_run(void) {
+  if (g_retro.initialized)
+    g_retro.retro_run();
+}
+
+static void _retro_reset(void) {
+  if (g_retro.initialized)
+    g_retro.retro_reset();
+}
+
+static bool _retro_load_game(const struct retro_game_info* game) {
+  if (g_retro.initialized)
+    return g_retro.retro_load_game(game);
+  return false;
+}
+
+static void _retro_unload_game() {
+  if (g_retro.initialized)
+    g_retro.retro_unload_game();
+}
+
+static void _retro_get_memory_data(unsigned id) {
+  if (g_retro.initialized)
+    g_retro.retro_get_memory_data(id);
+}
+
+static size_t _retro_get_memory_size(unsigned id) {
+  if (g_retro.initialized)
+    return g_retro.retro_get_memory_size(id);
+  return 0;
+}
+
+
 int main(int argc, char * argv[]) {
   // Ensure proper amount of arguments.
   if (argc < 2) {
@@ -353,40 +400,39 @@ int main(int argc, char * argv[]) {
   return 0;
 }
 
-namespace py = pybind11;
+
+py::array_t<uint8_t> get_video_data() {
+		long w = 100;
+		long h = 100;
+
+		py::array_t<uint8_t> arr({ { h, w, 3 } });
+		uint8_t* data = arr.mutable_data();
+
+    memmove(data, g_retro.video_data, h*w*3*sizeof(uint8_t));
+
+		return arr;
+}
+
 
 PYBIND11_MODULE(libretro, m) {
-    m.def("core_load", &core_load, R"pbdoc(
-        Load a Core
-    )pbdoc");
-    m.def("core_unload", &core_unload, R"pbdoc(
-        Unload a Core
-    )pbdoc");
-    m.def("core_load_game", &core_load_game, R"pbdoc(
-        Load a Game
-    )pbdoc");
+    m.def("core_load", &core_load, "");
+    m.def("core_unload", &core_unload, "");
+    m.def("core_load_game", &core_load_game, "");
 
-    m.def("audio_init", &audio_init, R"pbdoc(
-        init audio
-    )pbdoc");
+    m.def("audio_init", &audio_init, "");
+    m.def("video_configure", &video_configure, "");
 
-    m.def("audio_deinit", &audio_deinit, R"pbdoc(
-        De-init audio
-    )pbdoc");
-    m.def("video_deinit", &video_deinit, R"pbdoc(
-        De-init video
-    )pbdoc");
+    m.def("audio_deinit", &audio_deinit, "");
+    m.def("video_deinit", &video_deinit, "");
 
-    m.def("retro_init", g_retro.retro_init, "");
-    m.def("retro_deinit", g_retro.retro_deinit, "");
-    m.def("retro_api_version", g_retro.retro_api_version, "");
-    m.def("retro_get_system_info", g_retro.retro_get_system_info, "");
-    m.def("retro_get_system_av_info", g_retro.retro_get_system_av_info, "");
-    m.def("retro_set_controller_port_device", g_retro.retro_set_controller_port_device, "");
-    m.def("retro_reset", g_retro.retro_reset, "");
-    m.def("retro_run", g_retro.retro_run, "");
-    m.def("retro_load_game", g_retro.retro_load_game, "");
-    m.def("retro_unload_game", g_retro.retro_unload_game, "");
+    m.def("retro_run", &_retro_run, "");
+    m.def("retro_reset", &_retro_reset, "");
+    m.def("retro_load_game", &_retro_load_game, "");
+    m.def("retro_unload_game", &_retro_unload_game, "");
+    m.def("retro_get_memory_data", &_retro_get_memory_data, "");
+    m.def("retro_get_memory_size", &_retro_get_memory_size, "");
+
+    m.def("get_video_data", &get_video_data,  "");
 
     m.def("puts", &puts, R"pbdoc(
         Puts
