@@ -4,7 +4,8 @@ from setuptools import setup
 ext_modules = [
     Pybind11Extension(
             "libretro",
-            ["libretro/noarch.cpp"],
+            ["libretro/emulator.cpp",
+             "libretro/pybind.cpp"],
         ),
 ]
 
