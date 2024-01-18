@@ -54,10 +54,14 @@ struct PyEmulator {
         return (uint8_t) _e.core.retro_get_memory_size(id);
     }
 
-    py::array_t<int> get_memory_data(unsigned id, unsigned addr) {
-		py::array_t<int> arr({ 16 });
+    py::array_t<int> get_memory_data(unsigned id) {
+        int size = get_memory_size(id);
+		py::array_t<int> arr({ size });
+
         int* data = arr.mutable_data();
         void* mem_data = _e.core.retro_get_memory_data(id);
+
+        memcpy(data, mem_data, size*sizeof(int));
 
         return arr;
     }

@@ -36,6 +36,12 @@ void Emulator::default_log_cb(enum retro_log_level level, const char * fmt, ...)
 
 bool Emulator::default_env_cb(unsigned cmd, void * data) {
   switch (cmd) {
+    /*
+    case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
+      _e->input_desc = (retro_input_descriptor*) data;
+    }
+    break;
+    */
     case RETRO_ENVIRONMENT_GET_LOG_INTERFACE: {
       struct retro_log_callback* cb = (struct retro_log_callback*)data;
       cb->log = default_log_cb;
@@ -188,6 +194,8 @@ bool Emulator::core_load(const char* core_path) {
         // TODO put error msg
         return false;
     }
+
+    input |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
 
     // get width and height
     retro_system_av_info info;
