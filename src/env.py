@@ -25,24 +25,24 @@ class Retro2048Env(gym.Env, EzPickle):
         )
 
         self._boot()
+        obs_size = self.emu.get_memory_size(0)
 
         self.action_space = spaces.Discrete(4) 
-        self.observation_space = spaces.Box(0, np.inf, shape=(self.emu.get_memory_size(0)))
+        self.observation_space = spaces.Box(0, np.inf, shape=(obs_size,))
         self.render_mode = render_mode
     
     def _boot(self):
         self.emu = libretro.Emulator()
         self.emu.init("cores/2048/2048_libretro.so")
-        self._start_game()
             
     def _start_game(self):
         data = self.emu.get_memory_data(0)
 
-        if (data[2] == 0):
+        if (data[2] == 0 or data[2] == 2):
             self.emu.set_key(1 << 3)
             self.emu.run()
 
-    def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, action): #-> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         self.emu.set_key(1 << (action+4))
         self.emu.run()
         data = self.emu.get_memory_data(0)
@@ -53,11 +53,16 @@ class Retro2048Env(gym.Env, EzPickle):
 
         return obs, score, done, False, {}
     
-    def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ) -> tuple[ObsType, dict[str, Any]]:
+    def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ): # -> tuple[ObsType, dict[str, Any]]:
+        super().reset(seed=seed)
+
         self.emu.reset()
         self._start_game()
 
-    def render(self) -> Optional[RenderFrame | list[RenderFrame]]:
+        data = self.emu.get_memory_data(0)
+        return data, {}
+
+    def render(self): #-> Optional[RenderFrame | list[RenderFrame]]:
         col = group_argb8888(self.emu.get_video()).reshape(464,376,3)
 
         if self.render_mode == "rgb_array":
