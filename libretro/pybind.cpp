@@ -12,6 +12,58 @@
 
 namespace py = pybind11;
 
+typedef struct
+{
+   int up;
+   int down;
+   int left;
+   int right;
+   int start;
+   int select;
+} key_state_t;
+
+typedef enum
+{
+   DIR_NONE,
+   DIR_UP,
+   DIR_RIGHT,
+   DIR_DOWN,
+   DIR_LEFT
+} direction_t;
+
+typedef enum
+{
+   STATE_TITLE,
+   STATE_PLAYING,
+   STATE_GAME_OVER,
+   STATE_WON,
+   STATE_PAUSED
+} game_state_t;
+
+
+typedef struct vector
+{
+   int x;
+   int y;
+} vector_t;
+
+typedef struct cell {
+   int value;
+   vector_t pos;
+   vector_t old_pos;
+   float move_time;
+   float appear_time;
+   struct cell *source;
+} cell_t;
+
+typedef struct game {
+   int score;
+   int best_score;
+   game_state_t state;
+   key_state_t old_ks;
+   direction_t direction;
+   cell_t grid[16];
+} game_t;
 
 struct PyEmulator {
     Emulator _e;
@@ -50,18 +102,18 @@ struct PyEmulator {
         return arr;
     } 
 
-    uint8_t get_memory_size(unsigned id) {
-        return (uint8_t) _e.core.retro_get_memory_size(id);
+    size_t get_memory_size(unsigned id) {
+        return (size_t) _e.core.retro_get_memory_size(id);
     }
 
     py::array_t<int> get_memory_data(unsigned id) {
-        int size = get_memory_size(id);
-		py::array_t<int> arr({ size });
+        size_t size = get_memory_size(id);
+		py::array_t<int> arr({ size/sizeof(int) });
 
         int* data = arr.mutable_data();
         void* mem_data = _e.core.retro_get_memory_data(id);
 
-        memcpy(data, mem_data, size*sizeof(int));
+        memcpy(data, mem_data, size);
 
         return arr;
     }

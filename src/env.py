@@ -10,6 +10,9 @@ ObsType = TypeVar("ObsType")
 ActType = TypeVar("ActType")
 RenderFrame = TypeVar("RenderFrame")
 
+def group_argb8888(data):
+    return np.array(data).reshape(-1,4)[:,:3]
+
 class Retro2048Env(gym.Env, EzPickle):
     def __init__(
         self,
@@ -26,70 +29,22 @@ class Retro2048Env(gym.Env, EzPickle):
         self.observation_space = spaces.Box(0, np.inf, shape=(4,4))
     
     def _boot(self):
-        libretro.core_load("cores/2048/2048_libretro.so")
+        self.emu = libretro.Emulator()
+        self.emu.init("cores/2048/2048_libretro.so")
 
     def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
-        libretro.retro_run()
+        self.emu.set_key(1 << action)
+        self.emu.run()
+        data = self.emu.get_memory_data(0)
+        score = data[0]
+        obs = data[]
     
     def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ) -> tuple[ObsType, dict[str, Any]]:
-        libretro.retro_reset()
+        self.emu.reset()
 
     def render(self) -> Optional[RenderFrame | list[RenderFrame]]:
-        raise NotImplementedError
+        frame = group_argb8888(self.emu.get_video())
+        return frame
     
     def close(self):
-        libretro.core_unload()
-
-
-class ChromiumEnv(gym.Env):
-    def __init__(
-        self,
-        render_mode: Optional[str] = None,
-    ):
-        EzPickle.__init__(
-            self,
-            render_mode,
-        )
-
-        self.action_space = spaces.Box(-1, +1, (2,), dtype=np.float32)
-        self.observation_space = spaces.Box(np.array([-1]), np.array([1]))
-    
-    def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
-        raise NotImplementedError
-    
-    def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ) -> tuple[ObsType, dict[str, Any]]:
-        raise NotImplementedError
-
-    def render(self) -> Optional[RenderFrame | list[RenderFrame]]:
-        raise NotImplementedError
-    
-    def close(self):
-        pass
-
-
-class HTTPEnv(gym.Env):
-    def __init__(
-        self,
-        render_mode: Optional[str] = None,
-    ):
-        EzPickle.__init__(
-            self,
-            render_mode,
-        )
-
-        self.action_space = spaces.Box(-1, +1, (2,), dtype=np.float32)
-        self.observation_space = spaces.Box(np.array([-1]), np.array([1]))
-    
-    def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
-        raise NotImplementedError
-    
-    def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ) -> tuple[ObsType, dict[str, Any]]:
-        raise NotImplementedError
-
-    def render(self) -> Optional[RenderFrame | list[RenderFrame]]:
-        raise NotImplementedError
-    
-    def close(self):
-        pass
-
-
+        self.emu.deinit()

@@ -18,6 +18,8 @@
 
 class Core {
     private:
+        void* handle = nullptr;
+
         void (*retro_set_environment)(retro_environment_t);
         void (*retro_set_video_refresh)(retro_video_refresh_t);
         void (*retro_set_input_poll)(retro_input_poll_t);
@@ -25,7 +27,6 @@ class Core {
         void (*retro_set_audio_sample)(retro_audio_sample_t);
         void (*retro_set_audio_sample_batch)(retro_audio_sample_batch_t);
 
-    public:
         retro_environment_t env_cb;
         retro_video_refresh_t video_cb;
         retro_input_poll_t input_poll_cb;
@@ -33,8 +34,7 @@ class Core {
         retro_audio_sample_t audio_cb;
         retro_audio_sample_batch_t audio_b_cb;
 
-        void* handle = nullptr;
-
+    public:
         void (*retro_init)(void);
         void (*retro_deinit)(void);
         unsigned (*retro_api_version)(void);
