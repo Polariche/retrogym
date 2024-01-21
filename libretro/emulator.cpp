@@ -36,12 +36,10 @@ void Emulator::default_log_cb(enum retro_log_level level, const char * fmt, ...)
 
 bool Emulator::default_env_cb(unsigned cmd, void * data) {
   switch (cmd) {
-    /*
     case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
-      _e->input_desc = (retro_input_descriptor*) data;
+      _e->input_desc = ((retro_input_descriptor*) data);
     }
     break;
-    */
     case RETRO_ENVIRONMENT_GET_LOG_INTERFACE: {
       struct retro_log_callback* cb = (struct retro_log_callback*)data;
       cb->log = default_log_cb;
@@ -104,7 +102,7 @@ int16_t Emulator::default_input_state_cb(
       unsigned device,
       unsigned index,
       unsigned id) {
-  return _e->input & (1<<id);
+  return _e->input & (1 << id);
 }
 
 void Emulator::default_audio_cb(int16_t left, int16_t right) {
@@ -213,9 +211,33 @@ bool Emulator::core_unload() {
 }
 
 bool Emulator::game_load(const char* game_path) {
-    return false;
+    struct retro_game_info info = {game_path, 0, 0, NULL};
+    struct retro_system_av_info av = {
+      {100, 100, 100, 100, 1.0f}, // geometry
+      {60.0f, 10000.0f}           // timing
+    };
+    
+    if (game_path) {
+      FILE * file=NULL;
+      file = fopen(game_path, "rb");
+
+      if (!file)
+        return false;
+
+      fseek(file, 0, SEEK_END);
+      info.size = ftell(file);
+      rewind(file);
+    }
+
+    if (!core.retro_load_game(&info))
+      return false;
+
+    core.retro_get_system_av_info(&av);
+  
+    return true;
 }
 
 bool Emulator::game_unload() {
+
     return false;
 }

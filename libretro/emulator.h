@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <dlfcn.h>
+#include <map>
 
 #include "libretro.h"
 
@@ -81,7 +82,8 @@ class Emulator {
         Core core;
 
         const void* video_data = nullptr;
-        int16_t input = 0;
+        int16_t input;
+        retro_input_descriptor* input_desc;
 
         bool core_load(const char* core_path);
         bool core_unload();

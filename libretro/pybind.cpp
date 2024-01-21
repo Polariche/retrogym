@@ -12,58 +12,6 @@
 
 namespace py = pybind11;
 
-typedef struct
-{
-   int up;
-   int down;
-   int left;
-   int right;
-   int start;
-   int select;
-} key_state_t;
-
-typedef enum
-{
-   DIR_NONE,
-   DIR_UP,
-   DIR_RIGHT,
-   DIR_DOWN,
-   DIR_LEFT
-} direction_t;
-
-typedef enum
-{
-   STATE_TITLE,
-   STATE_PLAYING,
-   STATE_GAME_OVER,
-   STATE_WON,
-   STATE_PAUSED
-} game_state_t;
-
-
-typedef struct vector
-{
-   int x;
-   int y;
-} vector_t;
-
-typedef struct cell {
-   int value;
-   vector_t pos;
-   vector_t old_pos;
-   float move_time;
-   float appear_time;
-   struct cell *source;
-} cell_t;
-
-typedef struct game {
-   int score;
-   int best_score;
-   game_state_t state;
-   key_state_t old_ks;
-   direction_t direction;
-   cell_t grid[16];
-} game_t;
 
 struct PyEmulator {
     Emulator _e;
@@ -77,6 +25,14 @@ struct PyEmulator {
         return true;
     }
 
+    bool load_game(const char* game_path) {
+        return _e.game_load(game_path);
+    }
+
+    bool unload_game() {
+        return _e.game_unload();
+    }
+
     bool run() {
         _e.core.retro_run();
         return true;
@@ -87,8 +43,18 @@ struct PyEmulator {
         return true;
     }
 
-    void set_key(int input) {
-        _e.input = (int16_t) input;
+    py::list get_keys() {
+      py::list li;
+      int i = 0;
+      for(i=0; _e.input_desc[i].device; i++) {
+        py::tuple tup = py::make_tuple(_e.input_desc[i].id, _e.input_desc[i].description);
+        li.append(tup);
+      }
+      return li;
+    }
+
+    void set_key(int id) {
+        _e.input = (int16_t) (1 << id);
     }
 
     py::array_t<uint8_t> get_video() {
@@ -126,8 +92,11 @@ PYBIND11_MODULE(libretro, m) {
     .def(py::init())
     .def("init", &PyEmulator::init)
     .def("deinit", &PyEmulator::deinit)
+    .def("load_game", &PyEmulator::load_game)
+    .def("unload_game", &PyEmulator::unload_game)
     .def("run", &PyEmulator::run)
     .def("reset", &PyEmulator::reset)
+    .def("get_keys", &PyEmulator::get_keys)
     .def("set_key", &PyEmulator::set_key)
     .def("get_video", &PyEmulator::get_video)
     .def("get_memory_size", &PyEmulator::get_memory_size)
