@@ -18,6 +18,9 @@ def press_and_wait(key):
 e = libretro.Emulator()
 e.init("cores/2048/2048_libretro.so")
 
+w = e.width()
+h = e.height()
+
 # gently press the start button to start the game
 data = e.get_memory_data(0)
 
@@ -29,10 +32,10 @@ for i in range(3000):
     key = rand.randint(4,7)
     press_and_wait(key)
     
-    col = group_argb8888(e.get_video()).reshape(464,376,3)
+    col = group_argb8888(e.get_video()).reshape(h,w,3)
     data = e.get_memory_data(0)
 
-    cv2.imshow('', col.reshape(464,376,3))
+    cv2.imshow('', col.reshape(h,w,3))
     cv2.waitKey(1)
     time.sleep(0.02)
 

@@ -199,8 +199,8 @@ bool Emulator::core_load(const char* core_path) {
     retro_system_av_info info;
     core.retro_get_system_av_info(&info);
 
-    default_log_cb(RETRO_LOG_INFO, "Canvas size: %d x %d \n", info.geometry.base_width, info.geometry.base_height);
-
+    width = info.geometry.base_width;
+    height = info.geometry.base_height;
 
     return true;
 }

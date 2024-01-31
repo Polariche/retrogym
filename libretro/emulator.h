@@ -81,6 +81,7 @@ class Emulator {
     public:
         Core core;
 
+        int width, height;
         const void* video_data = nullptr;
         int16_t input;
         retro_input_descriptor* input_desc;

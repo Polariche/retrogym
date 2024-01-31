@@ -74,16 +74,19 @@ class Retro2048Env(gym.Env, EzPickle):
         return data, {}
 
     def render(self, render_mode=None): #-> Optional[RenderFrame | list[RenderFrame]]:
+        w = self.emu.width()
+        h = self.emu.height()
+        
         if not render_mode:
             render_mode = self.render_mode
-        col = group_argb8888(self.emu.get_video()).reshape(464,376,3)
+        col = group_argb8888(self.emu.get_video()).reshape(h,w,3)
 
         if render_mode == "rgb_array":
             col = np.concatenate([col[:,:,2:],col[:,:,1:2],col[:,:,:1]], axis=2)
             return col
         
         elif render_mode == "human":
-            cv2.imshow('', col.reshape(464,376,3))
+            cv2.imshow('', col.reshape(h,w,3))
             cv2.waitKey(1)
     
     def close(self):

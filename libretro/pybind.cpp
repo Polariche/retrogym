@@ -43,6 +43,14 @@ struct PyEmulator {
         return true;
     }
 
+    int width() {
+        return _e.width;
+    }
+
+    int height() {
+        return _e.height;
+    }
+
     py::list get_keys() {
       py::list li;
       int i = 0;
@@ -58,13 +66,13 @@ struct PyEmulator {
     }
 
     py::array_t<uint8_t> get_video() {
-        long w = 376;
-		long h = 464;
+        int w = _e.width;
+        int h = _e.height;
 
-		py::array_t<uint8_t> arr({ h*w*4 } );
+		py::array_t<uint8_t> arr({ w*h*4 } );
 		uint8_t* data = arr.mutable_data();
 
-        memcpy(data, _e.video_data, h*w*4*sizeof(uint8_t));
+        memcpy(data, _e.video_data, w*h*4*sizeof(uint8_t));
         return arr;
     } 
 
@@ -74,7 +82,7 @@ struct PyEmulator {
 
     py::array_t<int> get_memory_data(unsigned id) {
         size_t size = get_memory_size(id);
-		py::array_t<int> arr({ size/sizeof(int) });
+		py::array_t<int> arr({ (py::ssize_t) (size / sizeof(int)) });
 
         int* data = arr.mutable_data();
         void* mem_data = _e.core.retro_get_memory_data(id);
@@ -92,6 +100,8 @@ PYBIND11_MODULE(libretro, m) {
     .def(py::init())
     .def("init", &PyEmulator::init)
     .def("deinit", &PyEmulator::deinit)
+    .def("width", &PyEmulator::width)
+    .def("height", &PyEmulator::height)
     .def("load_game", &PyEmulator::load_game)
     .def("unload_game", &PyEmulator::unload_game)
     .def("run", &PyEmulator::run)
