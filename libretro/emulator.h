@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include <map>
+#include <vector>
 
 #include "libretro.h"
 
@@ -83,8 +84,9 @@ class Emulator {
 
         int width, height;
         const void* video_data = nullptr;
-        int16_t input;
-        retro_input_descriptor* input_desc;
+        std::map<int16_t, bool> input;
+        std::vector<retro_input_descriptor> input_desc;
+        unsigned pixel_format;
 
         bool core_load(const char* core_path);
         bool core_unload();

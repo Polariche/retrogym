@@ -40,26 +40,30 @@ class Retro2048Env(gym.Env, EzPickle):
     
     def _boot(self):
         self.emu = libretro.Emulator()
-        self.emu.init("cores/2048/2048_libretro.so")
-        self.emu.load_game(None)
+        self.emu.init("cores/2048_libretro.so")
+        self.emu.load_game("roms/pokemon_red.gb")
             
     def _start_game(self):
         self.emu.reset()
-        data = self.emu.get_memory_data(0)
+        data = self.emu.get_memory_data_b4(0)
 
         if (data[2] == 0 or data[2] == 2):
-            self.emu.set_key(3)
+            for i, _ in self.emu.get_keys():
+                self.emu.set_key(i, False)
+            self.emu.set_key(3, True)
             self.emu.run()
-            data = self.emu.get_memory_data(0)
+            data = self.emu.get_memory_data_b4(0)
 
         return data[10::10]
     
 
     def step(self, action): #-> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
-        self.emu.set_key(action+4)
+        for i, _ in self.emu.get_keys():
+            self.emu.set_key(i, False)
+        self.emu.set_key(action+4, True)
         self.emu.run()
         
-        data = self.emu.get_memory_data(0)
+        data = self.emu.get_memory_data_b4(0)
         obs = data[10::10]
         done = data[2] == 2
 

@@ -14,84 +14,99 @@ namespace py = pybind11;
 
 
 struct PyEmulator {
-    Emulator _e;
-      
+    Emulator emu;
+    py::list li;
+
     bool init(const char* core_path) {
-        return _e.core_load(core_path);
+        return emu.core_load(core_path);
     }
 
     bool deinit() {
-        _e.core_unload();
+        emu.core_unload();
         return true;
     }
 
     bool load_game(const char* game_path) {
-        return _e.game_load(game_path);
+        if (!emu.game_load(game_path))
+            return false;
+        
+        for(auto & t : emu.input_desc) {
+            py::tuple tup = py::make_tuple(t.id, t.description);
+            li.append(tup);
+        }
+
+        return true;
     }
 
     bool unload_game() {
-        return _e.game_unload();
+        return emu.game_unload();
+    }
+
+    bool load_save() {
+        return true;
+    }
+
+    bool unload_save() {
+        return true;
     }
 
     bool run() {
-        _e.core.retro_run();
+        emu.core.retro_run();
         return true;
     }
 
     bool reset() {
-        _e.core.retro_reset();
+        emu.core.retro_reset();
         return true;
     }
 
     int width() {
-        return _e.width;
+        return emu.width;
     }
 
     int height() {
-        return _e.height;
+        return emu.height;
     }
 
     py::list get_keys() {
-      py::list li;
-      int i = 0;
-      for(i=0; _e.input_desc[i].device; i++) {
-        py::tuple tup = py::make_tuple(_e.input_desc[i].id, _e.input_desc[i].description);
-        li.append(tup);
-      }
-      return li;
+        return li;
     }
 
-    void set_key(int id) {
-        _e.input = (int16_t) (1 << id);
+    void set_key(int id, bool value) {
+        emu.input[id] = value;
     }
 
-    py::array_t<uint8_t> get_video() {
-        int w = _e.width;
-        int h = _e.height;
+    py::array_t<uint16_t> get_video() {
+        int w = emu.width;
+        int h = emu.height;
 
-		py::array_t<uint8_t> arr({ w*h*4 } );
-		uint8_t* data = arr.mutable_data();
+        py::array_t<uint16_t> arr({ w*h } );
 
-        memcpy(data, _e.video_data, w*h*4*sizeof(uint8_t));
+        switch(emu.pixel_format) {
+            case RETRO_PIXEL_FORMAT_RGB565:
+                uint16_t* data = arr.mutable_data();
+                memcpy(data, emu.video_data, w*h*sizeof(uint16_t));
+                break;
+            default:
+                return arr;
+        }
+
         return arr;
     } 
 
     size_t get_memory_size(unsigned id) {
-        return (size_t) _e.core.retro_get_memory_size(id);
+        return (size_t) emu.core.retro_get_memory_size(id);
     }
 
-    py::array_t<int> get_memory_data(unsigned id) {
-        size_t size = get_memory_size(id);
-		py::array_t<int> arr({ (py::ssize_t) (size / sizeof(int)) });
+    py::array_t<uint8_t> get_memory_data(unsigned id) {
+        size_t size = emu.core.retro_get_memory_size(id);
+		py::array_t<uint8_t> arr({ (py::ssize_t) (size / sizeof(uint8_t)) });
 
-        int* data = arr.mutable_data();
-        void* mem_data = _e.core.retro_get_memory_data(id);
-
-        memcpy(data, mem_data, size);
+        memcpy(arr.mutable_data(), emu.core.retro_get_memory_data(id), size);
 
         return arr;
     }
-
+    
 };
 
 

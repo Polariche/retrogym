@@ -4,42 +4,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rand
 
-import cv2
+import cv2 
 import time
 
-def group_argb8888(data):
-    return np.array(data).reshape(-1,4)[:,:3]
-
-def press_and_wait(key):
-    e.set_key(1 << key)
-    e.run()
+def group_argb565(data):
+    data = np.array(data).reshape(-1)
     
+    r = (data & 0xF800) >> 8
+    g = (data & 0x07E0) >> 3
+    b = (data & 0x001F) << 3
+
+    return np.stack([r,g,b], axis=1)
 
 e = libretro.Emulator()
-e.init("cores/2048/2048_libretro.so")
+e.init("cores/mgba_libretro.so")
+e.load_game("roms/pokemon_red.gb")
 
-w = e.width()
 h = e.height()
+w = e.width()
 
-# gently press the start button to start the game
-data = e.get_memory_data(0)
+keys =  e.get_keys()
 
-if (data[2] == 0):
-    press_and_wait(3)
-
-for i in range(3000):
-
-    key = rand.randint(4,7)
-    press_and_wait(key)
+while True:
+    for i, _ in keys:
+        e.set_key(i, False)
+    cur_key = rand.choice(keys)
+    e.set_key(cur_key[0], True)
     
-    col = group_argb8888(e.get_video()).reshape(h,w,3)
-    data = e.get_memory_data(0)
+    e.run()
+    time.sleep(0.01)
 
-    cv2.imshow('', col.reshape(h,w,3))
+    data = e.get_memory_data(2)
+    # print(data)
+
+    #print(data[0xC104], data[0xC106])
+
+    col = group_argb565(e.get_video()).reshape(h,w,3).astype(np.uint8) #group_argb8888(e.get_video()).reshape(h,w,3)
+    cv2.imshow('', col)
     cv2.waitKey(1)
-    time.sleep(0.02)
 
-    if (data[2] == 2):
-        press_and_wait(3)
-
-e.deinit()
+    

@@ -37,7 +37,10 @@ void Emulator::default_log_cb(enum retro_log_level level, const char * fmt, ...)
 bool Emulator::default_env_cb(unsigned cmd, void * data) {
   switch (cmd) {
     case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
-      _e->input_desc = ((retro_input_descriptor*) data);
+      retro_input_descriptor* a = reinterpret_cast<retro_input_descriptor*>(data);
+      for(int i=0; a[i].device; i++) {
+        _e->input_desc.push_back(a[i]);
+      }
     }
     break;
     case RETRO_ENVIRONMENT_GET_LOG_INTERFACE: {
@@ -53,7 +56,7 @@ bool Emulator::default_env_cb(unsigned cmd, void * data) {
     break;
 
     case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: {
-      default_log_cb(RETRO_LOG_DEBUG, "[gym] RETRO_ENVIRONMENT_SET_PIXEL_FORMAT");
+      _e->pixel_format = *reinterpret_cast<unsigned*> (data);
       return true;
     }
 
@@ -102,7 +105,7 @@ int16_t Emulator::default_input_state_cb(
       unsigned device,
       unsigned index,
       unsigned id) {
-  return _e->input & (1 << id);
+  return _e->input[id];
 }
 
 void Emulator::default_audio_cb(int16_t left, int16_t right) {
@@ -146,7 +149,7 @@ bool Core::init(const char* core_path) {
     retro_set_audio_sample_batch(audio_b_cb);
 
     retro_init();
-
+    
     return true;
 }
 
@@ -192,16 +195,6 @@ bool Emulator::core_load(const char* core_path) {
         // TODO put error msg
         return false;
     }
-
-    input |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
-
-    // get width and height
-    retro_system_av_info info;
-    core.retro_get_system_av_info(&info);
-
-    width = info.geometry.base_width;
-    height = info.geometry.base_height;
-
     return true;
 }
 
@@ -211,33 +204,55 @@ bool Emulator::core_unload() {
 }
 
 bool Emulator::game_load(const char* game_path) {
+    struct retro_system_info system = {
+      0, 0, 0, false, false
+    };
     struct retro_game_info info = {game_path, 0, 0, NULL};
     struct retro_system_av_info av = {
       {100, 100, 100, 100, 1.0f}, // geometry
       {60.0f, 10000.0f}           // timing
     };
     
+    core.retro_get_system_info(&system);
+
+    FILE * file=NULL;
     if (game_path) {
-      FILE * file=NULL;
+      
       file = fopen(game_path, "rb");
 
-      if (!file)
+      if (!file) {
+        fclose(file);
         return false;
-
+      }
+        
       fseek(file, 0, SEEK_END);
       info.size = ftell(file);
+      
       rewind(file);
+
+      if (!system.need_fullpath) {
+        info.data = malloc(info.size);
+
+        if (!info.data || !fread((void * ) info.data, info.size, 1, file)) { // NOLINT
+          fclose(file);
+          return false;
+        }
+        fclose(file);
+      }
     }
 
     if (!core.retro_load_game(&info))
       return false;
 
     core.retro_get_system_av_info(&av);
-  
+
+    // get width and height
+    width = av.geometry.base_width;
+    height = av.geometry.base_height;
     return true;
 }
 
 bool Emulator::game_unload() {
-
+    core.retro_unload_game();
     return false;
 }
