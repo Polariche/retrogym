@@ -82,15 +82,8 @@ struct PyEmulator {
 
         py::array_t<uint16_t> arr({ w*h } );
 
-        switch(emu.pixel_format) {
-            case RETRO_PIXEL_FORMAT_RGB565:
-                uint16_t* data = arr.mutable_data();
-                memcpy(data, emu.video_data, w*h*sizeof(uint16_t));
-                break;
-            default:
-                return arr;
-        }
-
+        uint16_t* data = arr.mutable_data();
+        memcpy(data, emu.video_data, w*h*sizeof(uint16_t));
         return arr;
     } 
 
@@ -98,13 +91,8 @@ struct PyEmulator {
         return (size_t) emu.core.retro_get_memory_size(id);
     }
 
-    py::array_t<uint8_t> get_memory_data(unsigned id) {
-        size_t size = emu.core.retro_get_memory_size(id);
-		py::array_t<uint8_t> arr({ (py::ssize_t) (size / sizeof(uint8_t)) });
-
-        memcpy(arr.mutable_data(), emu.core.retro_get_memory_data(id), size);
-
-        return arr;
+    uint8_t get_memory_data(unsigned id, unsigned addr) {
+        return ((uint8_t*)emu.core.retro_get_memory_data(id))[addr];
     }
     
 };

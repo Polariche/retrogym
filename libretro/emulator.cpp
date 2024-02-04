@@ -97,6 +97,7 @@ void Emulator::default_video_cb(
       unsigned height,
       size_t pitch) {
     _e->video_data = data;
+    _e->video_pitch = pitch;
 }
 void Emulator::default_input_poll_cb(void) {
 }
@@ -249,6 +250,7 @@ bool Emulator::game_load(const char* game_path) {
     // get width and height
     width = av.geometry.base_width;
     height = av.geometry.base_height;
+
     return true;
 }
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Generic, SupportsFloat, TypeVar, Optional
+from typing import TYPE_CHECKING, Any, List, Generic, SupportsFloat, TypeVar, Optional
 import gymnasium as gym
 from gymnasium import error,spaces
 from gymnasium.error import DependencyNotInstalled
@@ -6,76 +6,71 @@ from gymnasium.utils import EzPickle
 import numpy as np
 import libretro 
 import cv2
+import utils
 
 ObsType = TypeVar("ObsType")
 ActType = TypeVar("ActType")
 RenderFrame = TypeVar("RenderFrame")
 
-def group_argb8888(data):
-    return np.array(data).reshape(-1,4)[:,:3]
 
-class Retro2048Env(gym.Env, EzPickle):
+
+class RetroEnv(gym.Env, EzPickle):
     metadata = {
         "render_modes": ["human", "rgb_array"]
     }
 
     def __init__(
         self,
+        core: str,
+        rom: str,
+        ram: List[str] = [],
         render_mode: Optional[str] = None,
     ):
         EzPickle.__init__(
             self,
+            core,
+            rom,
             render_mode,
         )
 
-        self._boot()
-        obs_size = 16 #int(self.emu.get_memory_size(0)/4)-10
+        self.emu = libretro.Emulator()
+        self.emu.init(core)
+        self.emu.load_game(rom)
 
-        print(self.emu.get_keys())
+        self.keys = self.emu.get_keys()
+        self.ram = ram
 
-        self.action_space = spaces.Discrete(4) 
-        self.observation_space = spaces.Box(0, 17, shape=(obs_size,), dtype=int)
+        self.player_action = -1
+
+        print(self.keys)
+
+        self.action_space = spaces.Discrete(len(self.keys))
+        self.observation_space = spaces.Box(0, 255, shape=(len(ram),), dtype=np.uint8)
         self.render_mode = render_mode
 
+    def score(self, obs):
+        return 0
     
-    def _boot(self):
-        self.emu = libretro.Emulator()
-        self.emu.init("cores/2048_libretro.so")
-        self.emu.load_game("roms/pokemon_red.gb")
-            
-    def _start_game(self):
-        self.emu.reset()
-        data = self.emu.get_memory_data_b4(0)
-
-        if (data[2] == 0 or data[2] == 2):
-            for i, _ in self.emu.get_keys():
-                self.emu.set_key(i, False)
-            self.emu.set_key(3, True)
-            self.emu.run()
-            data = self.emu.get_memory_data_b4(0)
-
-        return data[10::10]
+    def done(self, obs):
+        return False
     
-
     def step(self, action): #-> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
-        for i, _ in self.emu.get_keys():
-            self.emu.set_key(i, False)
-        self.emu.set_key(action+4, True)
+        for i, key in enumerate(self.keys):
+            self.emu.set_key(key[0], action == i)
+
         self.emu.run()
         
-        data = self.emu.get_memory_data_b4(0)
-        obs = data[10::10]
-        done = data[2] == 2
+        obs = [self.emu.get_memory_data(2, r - 0xC000) for r in self.ram]
+        score = self.score(obs)
+        done = self.done(obs)
 
-        score = (np.log2(data[0]) if data[0] > 0 else 0)
-        
         return obs, score, done, False, {}
     
     def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ): # -> tuple[ObsType, dict[str, Any]]:
         super().reset(seed=seed)
+        obs, _, _, _, lab = self.step()
 
-        data = self._start_game()
-        return data, {}
+        return obs, lab
 
     def render(self, render_mode=None): #-> Optional[RenderFrame | list[RenderFrame]]:
         w = self.emu.width()
@@ -83,15 +78,29 @@ class Retro2048Env(gym.Env, EzPickle):
         
         if not render_mode:
             render_mode = self.render_mode
-        col = group_argb8888(self.emu.get_video()).reshape(h,w,3)
+
+        col = utils.group_argb565(self.emu.get_video()).astype(np.uint8).reshape(h,w,3)
 
         if render_mode == "rgb_array":
-            col = np.concatenate([col[:,:,2:],col[:,:,1:2],col[:,:,:1]], axis=2)
             return col
         
         elif render_mode == "human":
-            cv2.imshow('', col.reshape(h,w,3))
-            cv2.waitKey(1)
+            cv2.imshow('', col[:,:,::-1])
+            k = cv2.waitKey(1) & 0xFF
+                        
+            if k == 0xFF:
+                self.player_action = -1
+            else:
+                try:
+                    keymap = {122: 'A', 120: 'B', 82: 'Up', 81: 'Left', 83: 'Right', 84: 'Down'}
+                    action = {key[1]:i for i,key in enumerate(self.keys)}[keymap[k]]
+                    
+                    self.player_action = action
+
+                    print(keymap[k], action)
+                except:
+                    pass
+
     
     def close(self):
         self.emu.deinit()

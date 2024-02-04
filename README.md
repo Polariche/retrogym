@@ -1,3 +1,15 @@
+Usage example:
+
+```console
+python src/main.py \
+-c cores/mgba_libretro.so \ 
+-r roms/pokemon_red.gb \
+--display \
+--ram 0xD35E \
+--ram 0xD361 \
+--ram 0xD362 \
+--model random
+```
 
 
 This project has gotten so far thanks to:

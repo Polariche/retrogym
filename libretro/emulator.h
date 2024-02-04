@@ -84,6 +84,7 @@ class Emulator {
 
         int width, height;
         const void* video_data = nullptr;
+        size_t video_pitch;
         std::map<int16_t, bool> input;
         std::vector<retro_input_descriptor> input_desc;
         unsigned pixel_format;
