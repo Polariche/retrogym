@@ -134,6 +134,9 @@ bool Core::init(const char* core_path) {
     (*(void**)&retro_get_region) = dlsym(handle, "retro_get_region");
     (*(void**)&retro_get_memory_size) = dlsym(handle, "retro_get_memory_size");
     (*(void**)&retro_get_memory_data) = dlsym(handle, "retro_get_memory_data");
+    (*(void**)&retro_serialize_size) = dlsym(handle, "retro_serialize_size");
+    (*(void**)&retro_serialize) = dlsym(handle, "retro_serialize");
+    (*(void**)&retro_unserialize) = dlsym(handle, "retro_unserialize");
 
     (*(void**)&retro_set_environment) = dlsym(handle, "retro_set_environment");
     (*(void**)&retro_set_video_refresh) = dlsym(handle, "retro_set_video_refresh");
@@ -257,4 +260,54 @@ bool Emulator::game_load(const char* game_path) {
 bool Emulator::game_unload() {
     core.retro_unload_game();
     return false;
+}
+
+bool Emulator::state_load(const char* state_path) {
+    size_t size = core.retro_serialize_size();
+    FILE * file=NULL;
+    void* data = malloc(size);
+    bool success = false;
+
+    if (state_path) {
+      file = fopen(state_path, "rb");
+
+      if (!file) {
+        fclose(file);
+        return false;
+      }
+
+      if ((success = fread((void * ) data, size, 1, file))) {
+        success &= core.retro_unserialize(data, size);
+      }
+      fclose(file);
+    }
+
+    free(data);
+    return success;
+}
+
+
+bool Emulator::state_save(const char* state_path) {
+    
+    size_t size = core.retro_serialize_size();
+    FILE * file=NULL;
+
+    void* data = malloc(size);
+    bool success = false;
+
+    if (state_path) {
+      file = fopen(state_path, "wb");
+      
+      if (!file) {
+        fclose(file);
+        return false;
+      }
+
+      core.retro_serialize(data, size);
+      success = fwrite((void * ) data, size, 1, file);
+      fclose(file);
+    }
+
+    free(data);
+    return success;
 }

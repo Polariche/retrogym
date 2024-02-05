@@ -42,12 +42,12 @@ struct PyEmulator {
         return emu.game_unload();
     }
 
-    bool load_save() {
-        return true;
+    bool load_state(const char* state_path) {
+        return emu.state_load(state_path);
     }
 
-    bool unload_save() {
-        return true;
+    bool save_state(const char* state_path) {
+        return emu.state_save(state_path);
     }
 
     bool run() {
@@ -107,6 +107,8 @@ PYBIND11_MODULE(libretro, m) {
     .def("height", &PyEmulator::height)
     .def("load_game", &PyEmulator::load_game)
     .def("unload_game", &PyEmulator::unload_game)
+    .def("load_state", &PyEmulator::load_state)
+    .def("save_state", &PyEmulator::save_state)
     .def("run", &PyEmulator::run)
     .def("reset", &PyEmulator::reset)
     .def("get_keys", &PyEmulator::get_keys)

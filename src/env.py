@@ -24,6 +24,7 @@ class RetroEnv(gym.Env, EzPickle):
         core: str,
         rom: str,
         ram: List[str] = [],
+        state: Optional[str] = None,
         render_mode: Optional[str] = None,
     ):
         EzPickle.__init__(
@@ -43,6 +44,9 @@ class RetroEnv(gym.Env, EzPickle):
         self.player_action = -1
 
         print(self.keys)
+        if state is None:
+            state = rom+".state"
+        self.state = state
 
         self.action_space = spaces.Discrete(len(self.keys))
         self.observation_space = spaces.Box(0, 255, shape=(len(ram),), dtype=np.uint8)
@@ -86,20 +90,32 @@ class RetroEnv(gym.Env, EzPickle):
         
         elif render_mode == "human":
             cv2.imshow('', col[:,:,::-1])
-            k = cv2.waitKey(1) & 0xFF
+            k = cv2.waitKey(6) & 0xFF
                         
             if k == 0xFF:
                 self.player_action = -1
+            elif k == 32:
+                print("state saved: %s" % self.state)
+                self.emu.save_state(self.state)
             else:
                 try:
-                    keymap = {122: 'A', 120: 'B', 82: 'Up', 81: 'Left', 83: 'Right', 84: 'Down'}
+                    keymap = {122: 'A', 
+                              120: 'B', 
+                              82: 'Up', 
+                              81: 'Left', 
+                              83: 'Right', 
+                              84: 'Down', 
+                              13: 'Start', 
+                              27: 'Select', 
+                              97: 'L', 
+                              100: 'R'}
                     action = {key[1]:i for i,key in enumerate(self.keys)}[keymap[k]]
                     
                     self.player_action = action
 
                     print(keymap[k], action)
                 except:
-                    pass
+                    print(k)
 
     
     def close(self):

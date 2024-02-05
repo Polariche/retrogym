@@ -93,4 +93,6 @@ class Emulator {
         bool core_unload();
         bool game_load(const char* game_path);
         bool game_unload();
+        bool state_load(const char* state_path);
+        bool state_save(const char* state_path);
 };

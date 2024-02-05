@@ -20,6 +20,8 @@ parser.add_argument('--rom', '-r', dest='rom', action="store", type=str,
                     help='ROM file to load')
 parser.add_argument('--ram', dest='ram', action="append", type=str,
                     help='RAM to be used as observation for training')
+parser.add_argument('--state', '-s', dest='state', action="store", type=str,
+                    help='')
 parser.add_argument('--display', '-d', dest='display', action="store_true",
                     help='')
 parser.add_argument('--loop', '-l', dest='loop', action="store", type=int, default=-1,
@@ -66,7 +68,6 @@ def model_loop(args, env, model=None):
     env.render()
 
     #print(','.join([str(o) for o in obs]))
-    time.sleep(args.delay)
 
 
 def main():
@@ -78,10 +79,16 @@ def main():
                    render_mode="human")
     model = None
     loop = args.loop
+    cnt = 0
+
+    if args.state is not None:
+        env.emu.load_state(args.state)
+
     while loop != 0:
         model_loop(args, env, model)
 
         loop = max(-1, loop-1)
+        cnt += 1
 
 
 if __name__ == "__main__":
