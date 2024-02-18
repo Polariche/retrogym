@@ -12,23 +12,29 @@ import time
 import argparse
 import utils
 
+from gymnasium.wrappers import TransformObservation
+from stable_baselines3.common.vec_env import DummyVecEnv
+
+
 parser = argparse.ArgumentParser(description='Process some integers.')
 
 parser.add_argument('--core', '-c', dest='core', action="store", type=str,
                     help='Core file to load')
 parser.add_argument('--rom', '-r', dest='rom', action="store", type=str,
                     help='ROM file to load')
-parser.add_argument('--ram', dest='ram', action="append", type=str,
-                    help='RAM to be used as observation for training')
 parser.add_argument('--state', '-s', dest='state', action="store", type=str,
                     help='')
-parser.add_argument('--display', '-d', dest='display', action="store_true",
-                    help='')
-parser.add_argument('--loop', '-l', dest='loop', action="store", type=int, default=-1,
+parser.add_argument('--action', '-a', dest='actions', action="append", type=str,
+                    help='Available actions for the model')
+parser.add_argument('--config', dest='config', action="store", type=str,
+                    help='config file location')
+parser.add_argument('--loop', '-l', dest='loop', action="store", type=int, default=100000,
                     help='')
 parser.add_argument('--delay', dest='delay', action="store", type=float, default=0.01,
                     help='')
 parser.add_argument('--model', dest='model', action="store", type=str, default="random",
+                    help='')
+parser.add_argument('--train', dest='train', action="store_true",
                     help='')
 
 def random_loop(args, e):
@@ -56,39 +62,58 @@ def random_loop(args, e):
         cv2.waitKey(1)
 
 
-def model_loop(args, env, model=None):
+def model_loop(args, env, model, obs):
     if args.model == "random":
-        action = rand.choice(range(len(env.keys)))
+        action = np.array([env.action_space.sample()])
     elif args.model == "human":
-        action = env.player_action
+        action = np.array([env.envs[0].player_action])
     else: 
         action, _states = model.predict(obs)
 
-    obs, rewards, dones, _, info = env.step(action)
+    obs, rewards, dones, info = env.step(action)
     env.render()
 
-    #print(','.join([str(o) for o in obs]))
+    return obs
 
+from stable_baselines3 import PPO, DQN
+models = {"PPO": PPO, "DQN": DQN}
+
+def make_model(name, env):
+    if name in ["PPO", "DQN"]:
+        return models[name]("MultiInputPolicy", env, verbose=1)
+    else:
+        return None
+
+def load_model(name, filename):
+    try:
+        return models[name].load(filename)
+    except:
+        return None
 
 def main():
     args = parser.parse_args()
-    args.ram = [int(r, 16) for r in args.ram]
-    env = RetroEnv(core=args.core, 
-                   rom=args.rom,
-                   ram=args.ram,
+    config = utils.read_config_from_yaml(args.config)
+
+    env = RetroEnv(config=config,
                    render_mode="human")
-    model = None
+    
+    env = DummyVecEnv([lambda: env])
+    
     loop = args.loop
-    cnt = 0
 
-    if args.state is not None:
-        env.emu.load_state(args.state)
-
-    while loop != 0:
-        model_loop(args, env, model)
-
-        loop = max(-1, loop-1)
-        cnt += 1
+    if args.train:
+        model = make_model(args.model, env)
+        model.learn(total_timesteps=loop, progress_bar=True)
+        model.save("meet_oak")
+    else:
+        model = load_model(args.model, "meet_oak")
+        cnt = 0
+        obs = env.reset()
+        while loop != 0:
+            obs = model_loop(args, env, model, obs)
+            
+            loop = max(-1, loop-1)
+            cnt += 1
 
 
 if __name__ == "__main__":

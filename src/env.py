@@ -7,6 +7,10 @@ import numpy as np
 import libretro 
 import cv2
 import utils
+import rewards
+import endings
+
+from models import ConfigModel
 
 ObsType = TypeVar("ObsType")
 ActType = TypeVar("ActType")
@@ -21,60 +25,103 @@ class RetroEnv(gym.Env, EzPickle):
 
     def __init__(
         self,
-        core: str,
-        rom: str,
-        ram: List[str] = [],
-        state: Optional[str] = None,
+        config: ConfigModel,
         render_mode: Optional[str] = None,
     ):
         EzPickle.__init__(
             self,
-            core,
-            rom,
+            config.core,
+            config.rom,
+            config.state,
+            config.actions,
             render_mode,
         )
 
         self.emu = libretro.Emulator()
-        self.emu.init(core)
-        self.emu.load_game(rom)
+        self.emu.init(config.core)
+        self.emu.load_game(config.rom)
+        self.config = config
+        self.state = config.state
 
         self.keys = self.emu.get_keys()
-        self.ram = ram
+        if config.actions is not None:
+            self.keys = [k for k in self.keys if k[1] in config.actions]     # use only directional keys
 
         self.player_action = -1
 
-        print(self.keys)
-        if state is None:
-            state = rom+".state"
-        self.state = state
-
+        space_map = {"discrete": spaces.Discrete(256), "box": spaces.Box(0, 255, shape=(1,))}
         self.action_space = spaces.Discrete(len(self.keys))
-        self.observation_space = spaces.Box(0, 255, shape=(len(ram),), dtype=np.uint8)
+        self.observation_space = spaces.Dict(
+                                    {obs.name:space_map[obs.space] for obs in self.config.observations}
+                                )
         self.render_mode = render_mode
 
-    def score(self, obs):
-        return 0
+    def obs(self):
+        return {obs.name:utils.parse_ram(self.emu, obs.address)[0] for obs in self.config.observations}
+        
+    def get_reward(self, past_obs, action, obs):
+        for r in self.rewards:
+            res = r.get_reward(past_obs, action, obs)
+            if res > 0 or res < 0:
+                return res
     
-    def done(self, obs):
+    def done(self, past_obs, action, obs):
+        for e in self.endings:
+            if e.done(past_obs, action, obs):
+                return True
         return False
     
     def step(self, action): #-> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+        past_obs = self.obs()
+
         for i, key in enumerate(self.keys):
             self.emu.set_key(key[0], action == i)
 
-        self.emu.run()
-        
-        obs = [self.emu.get_memory_data(2, r - 0xC000) for r in self.ram]
-        score = self.score(obs)
-        done = self.done(obs)
+        for _ in range(30):
+            self.emu.run()
 
-        return obs, score, done, False, {}
+        obs = self.obs()
+        
+        reward = self.get_reward(past_obs, action, obs)
+        done = self.done(past_obs, action, obs)
+
+        return obs, reward, done, False, {}
     
     def reset(self, *, seed: Optional[int]= None, options: Optional[dict] = None, ): # -> tuple[ObsType, dict[str, Any]]:
         super().reset(seed=seed)
-        obs, _, _, _, lab = self.step()
+
+        self.rewards = [rewards.create_reward(r) for r in self.config.rewards]
+        self.endings = [endings.create_ending(e) for e in self.config.endings]
+
+        self.emu.load_state(self.state)
+        obs, _, _, _, lab = self.step(-1)
 
         return obs, lab
+    
+
+    def human_control(self, k):
+        if k == 0xFF:
+            self.player_action = -1
+        elif k == 32:
+            print("state saved: %s" % self.state)
+            self.emu.save_state(self.state)
+        else:
+            try:
+                keymap = {122: 'A', 
+                            120: 'B', 
+                            82: 'Up', 
+                            81: 'Left', 
+                            83: 'Right', 
+                            84: 'Down', 
+                            13: 'Start', 
+                            27: 'Select', 
+                            97: 'L', 
+                            100: 'R'}
+                action = {key[1]:i for i,key in enumerate(self.keys)}[keymap[k]]
+                self.player_action = action
+            except:
+                pass
+
 
     def render(self, render_mode=None): #-> Optional[RenderFrame | list[RenderFrame]]:
         w = self.emu.width()
@@ -90,33 +137,10 @@ class RetroEnv(gym.Env, EzPickle):
         
         elif render_mode == "human":
             cv2.imshow('', col[:,:,::-1])
-            k = cv2.waitKey(6) & 0xFF
-                        
-            if k == 0xFF:
-                self.player_action = -1
-            elif k == 32:
-                print("state saved: %s" % self.state)
-                self.emu.save_state(self.state)
-            else:
-                try:
-                    keymap = {122: 'A', 
-                              120: 'B', 
-                              82: 'Up', 
-                              81: 'Left', 
-                              83: 'Right', 
-                              84: 'Down', 
-                              13: 'Start', 
-                              27: 'Select', 
-                              97: 'L', 
-                              100: 'R'}
-                    action = {key[1]:i for i,key in enumerate(self.keys)}[keymap[k]]
-                    
-                    self.player_action = action
-
-                    print(keymap[k], action)
-                except:
-                    print(k)
-
+            k = cv2.waitKey(1) & 0xFF
+            self.human_control(k)
     
     def close(self):
         self.emu.deinit()
+                        
+    

@@ -1,0 +1,13 @@
+core: cores/mgba_libretro.so
+rom: roms/pokemon_red.gb
+state: states/ash_room.state
+ram:
+  turns: "0xCCD5"
+  playerHP: "0xCCD7"
+  playerPokemonNum: "0xD163"
+  playerPokemons: "0xD164:0xD169"
+  playerPokemonDetailed: "0xD16B:0xD272"
+  enemyHP: "0xCCD8"
+  enemyPokemonNum: "0xD89C"
+  enemyPokemons: "0xD89D:0xD8A2"
+  enemyPokemonDetailed: "0xD8A4:0xD9AB"

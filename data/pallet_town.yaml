@@ -1,0 +1,40 @@
+core: cores/mgba_libretro.so
+rom: roms/pokemon_red.gb
+state: states/ash_room.state
+
+actions: ["Up", "Down", "Right", "Left"]
+
+observations:
+  - name: mapId 
+    address: "0xD35E"
+    space: discrete
+  - name: playerY
+    address: "0xD361"
+    space: box
+  - name: playerX
+    address: "0xD362"
+    space: box
+
+rewards:
+  - type: new
+    targets: ["mapId"]
+    reward: 1
+
+  - type: unchanged
+    targets: ["mapId", "playerY", "playerX"]
+    reward: -0.8
+
+  - type: duplicate
+    targets: ["mapId", "playerY", "playerX"]
+    reward: -0.2
+
+  - type: default
+    reward: -0.1
+
+endings:
+  - type: match
+    targets: ["mapId"]
+    values: [0]
+
+  - type: timeout
+    values: [512]
