@@ -29,8 +29,7 @@ You can customize an experiment by writing a config file. Refer to `data` folder
 
 * `actions` is the list of inputs allowed throughout the experiment.
 
-* `observations` is the list of variables we feed into the reinforcement model.
-the variables can be also used to calculate the rewards and determine whether to reset the environment.
+* `observations` is the list of variables we feed into the reinforcement model. The values are parsed directly from RAM according to `address`; to extract the values you need you need to refer to [a RAM map](https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red_and_Blue/RAM_map).
 
 * `rewards` reads variables from `observations`, and evaluates rewards based on them. Currently available values for `condition` are `new`, `duplicate`, `changed`, `unchangd`, and `default`.
 
