@@ -44,6 +44,8 @@ To randomize the inputs, run the following command:
 python src/main.py --config data/rival_battle.yaml --model random
 ```
 
+
+
 To train a PPO model (implemented by Stable Baselines3), run:
 ```
 python src/main.py --config data/rival_battle.yaml --model PPO --model-file models/rival --train
@@ -54,6 +56,9 @@ You may test the trained model by removing `--train`
 ```
 python src/main.py --config data/rival_battle.yaml --model-file rival --model PPO --model-file models/rival
 ```
+You should see something along the GIF below:
+
+![gif](https://raw.githubusercontent.com/Polariche/retrogym/main/docs/rival_example.gif)
 
 # References
 
