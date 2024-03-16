@@ -12,7 +12,7 @@ class BaseEnding:
 class MatchEnding(BaseEnding):
     def done(self, past_obs, action, obs):
         for target, value in zip(self.targets, self.values):
-            if obs[target] != value:
+            if obs[target] != tuple([value]):
                 return False 
         return True
 
@@ -35,7 +35,7 @@ ending_objects = {
 
 def create_ending(ending_model):
     try:
-        return ending_objects[ending_model.type](ending_model.targets, ending_model.values)
+        return ending_objects[ending_model.condition](ending_model.targets, ending_model.values)
 
     except IndexError:
-        raise Exception(f"'{ending_model.type}' does not have an Ending class")
+        raise Exception(f"'{ending_model.condition}' does not have an Ending class")

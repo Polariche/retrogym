@@ -9,7 +9,7 @@ import cv2
 import utils
 import rewards
 import endings
-
+import os 
 from models import ConfigModel
 
 ObsType = TypeVar("ObsType")
@@ -49,15 +49,14 @@ class RetroEnv(gym.Env, EzPickle):
 
         self.player_action = -1
 
-        space_map = {"discrete": spaces.Discrete(256), "box": spaces.Box(0, 255, shape=(1,))}
         self.action_space = spaces.Discrete(len(self.keys))
         self.observation_space = spaces.Dict(
-                                    {obs.name:space_map[obs.space] for obs in self.config.observations}
+                                    {obs.name:spaces.Box(0, 255, shape=(utils.parse_ram_size(obs.address),)) for obs in self.config.observations}
                                 )
         self.render_mode = render_mode
 
     def obs(self):
-        return {obs.name:utils.parse_ram(self.emu, obs.address)[0] for obs in self.config.observations}
+        return {obs.name:utils.parse_ram(self.emu, obs.address) for obs in self.config.observations}
         
     def get_reward(self, past_obs, action, obs):
         for r in self.rewards:
@@ -77,7 +76,7 @@ class RetroEnv(gym.Env, EzPickle):
         for i, key in enumerate(self.keys):
             self.emu.set_key(key[0], action == i)
 
-        for _ in range(30):
+        for _ in range(12):
             self.emu.run()
 
         obs = self.obs()
@@ -93,7 +92,10 @@ class RetroEnv(gym.Env, EzPickle):
         self.rewards = [rewards.create_reward(r) for r in self.config.rewards]
         self.endings = [endings.create_ending(e) for e in self.config.endings]
 
-        self.emu.load_state(self.state)
+        if os.path.isfile(self.state): 
+            self.emu.load_state(self.state)
+        else:
+            print(f"'{self.state}' doesn't exist; skip loading")
         obs, _, _, _, lab = self.step(-1)
 
         return obs, lab

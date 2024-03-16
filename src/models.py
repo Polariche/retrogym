@@ -5,13 +5,13 @@ from typing import List, Optional, Union
 
 class ObservationModel(BaseModel):
     name: str
-    space: str
+    space: Optional[str] = "box"
     address: Optional[str] = ''
 
 
 RewardModel = ForwardRef('RewardModel')
 class RewardModel(BaseModel):
-    type: str
+    condition: str
     targets: Optional[List[str]] = []
     reward: Optional[float] = 0
 
@@ -19,7 +19,7 @@ RewardModel.update_forward_refs()
 
 
 class EndingModel(BaseModel):
-    type: str
+    condition: str
     targets: Optional[List[str]] = []
     values: Optional[List[Union[str, int, float]]] = []
 

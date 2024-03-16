@@ -1,6 +1,6 @@
 core: cores/mgba_libretro.so
 rom: roms/pokemon_red.gb
-state: states/ash_room.state
+state: states/charmander.state
 
 actions: ["Up", "Down", "Right", "Left", "A", "B"]
 
@@ -11,10 +11,12 @@ observations:
     address: "0xD361"
   - name: playerX
     address: "0xD362"
+  - name: level1
+    address: "0xD18C"
 
 rewards:
   - condition: new
-    targets: ["mapId"]
+    targets: ["level1"]
     reward: 10
 
   - condition: new
@@ -28,6 +30,4 @@ rewards:
   - condition: default
     reward: -0.5
 
-endings:
-  - condition: timeout
-    values: [2048]
+endings: []

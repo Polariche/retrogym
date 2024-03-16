@@ -18,19 +18,12 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 
-parser.add_argument('--core', '-c', dest='core', action="store", type=str,
-                    help='Core file to load')
-parser.add_argument('--rom', '-r', dest='rom', action="store", type=str,
-                    help='ROM file to load')
-parser.add_argument('--state', '-s', dest='state', action="store", type=str,
-                    help='')
-parser.add_argument('--action', '-a', dest='actions', action="append", type=str,
-                    help='Available actions for the model')
+
 parser.add_argument('--config', dest='config', action="store", type=str,
                     help='config file location')
+parser.add_argument('--model-file', dest='model_file', action="store", type=str,
+                    help='model location')
 parser.add_argument('--loop', '-l', dest='loop', action="store", type=int, default=100000,
-                    help='')
-parser.add_argument('--delay', dest='delay', action="store", type=float, default=0.01,
                     help='')
 parser.add_argument('--model', dest='model', action="store", type=str, default="random",
                     help='')
@@ -104,9 +97,9 @@ def main():
     if args.train:
         model = make_model(args.model, env)
         model.learn(total_timesteps=loop, progress_bar=True)
-        model.save("meet_oak")
+        model.save(args.model_file)
     else:
-        model = load_model(args.model, "meet_oak")
+        model = load_model(args.model, args.model_file)
         cnt = 0
         obs = env.reset()
         while loop != 0:

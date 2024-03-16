@@ -1,0 +1,35 @@
+core: cores/mgba_libretro.so
+rom: roms/pokemon_red.gb
+state: states/charmander_rival_battle.state
+
+actions: ["Up", "Down", "Right", "Left", "A", "B"]
+
+observations:
+  - name: battleType 
+    address: "0xD057"
+  - name: battleTurns
+    address: "0xCCD5"
+  - name: playerHP
+    address: "0xD015:0xD016"
+  - name: enemyHP
+    address: "0xCFE6:0xCFE7"
+  - name: playerExp
+    address: "0xD179:0xD17B"
+
+rewards: 
+- condition: changed
+  targets: ["battleTurns"]
+  reward: 5
+- condition: changed
+  targets: ["enemyHP"]
+  reward: 10
+- condition: changed
+  targets: ["playerExp"]
+  reward: 50
+- condition: default
+  reward: -1
+
+endings: 
+- condition: match
+  targets: ["battleType"]
+  values: [0]

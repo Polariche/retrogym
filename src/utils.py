@@ -18,10 +18,10 @@ def parse_ram(emu, addr):
         s = int(s, 16)
         e = int(e, 16)
 
-        return [emu.get_memory_data(2, addr - 0xC000) for addr in range(s,e+1)]
+        return tuple([emu.get_memory_data(2, addr - 0xC000) for addr in range(s,e+1)])
     else:
         addr = int(addr, 16)
-        return [emu.get_memory_data(2, addr - 0xC000)]
+        return tuple([emu.get_memory_data(2, addr - 0xC000)])
     
 
 def parse_ram_size(addr):

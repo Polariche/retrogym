@@ -78,7 +78,7 @@ reward_objects = {
 
 def create_reward(reward_model):
     try:
-        return reward_objects[reward_model.type](reward_model.targets, reward_model.reward)
+        return reward_objects[reward_model.condition](reward_model.targets, reward_model.reward)
 
     except IndexError:
-        raise Exception(f"'{reward_model.type}' does not have a Reward class")
+        raise Exception(f"'{reward_model.condition}' does not have a Reward class")
