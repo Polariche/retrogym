@@ -6,13 +6,21 @@ sudo apt-get install -y python3-dev build-essential libgl1-mesa-glx libglib2.0-0
 sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libsm6 libxext6 libxrender-dev
 ```
 
+(Optional) Build GRPC Emulator
+```
+mkdir -p cmake/build
+cd cmake/build
+cmake ../../
+make
+```
+
 Create & activate venv
 ```
 python3 -m venv venv
 . venv/bin/activate
 ```
 
-Install requirements & Libretro 
+Install requirements & RetroGym
 ```
 pip install -r requirements.txt
 python setup.py install
@@ -53,7 +61,7 @@ python src/main.py --config data/rival_battle.yaml --model PPO --model-file mode
 You may test the trained model by removing `--train` 
 
 ```
-python src/main.py --config data/rival_battle.yaml --model-file rival --model PPO --model-file models/rival
+python src/main.py --config data/rival_battle.yaml --model PPO --model-file models/rival
 ```
 You should see something along the GIF below:
 
