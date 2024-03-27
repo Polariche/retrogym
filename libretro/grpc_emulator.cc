@@ -59,16 +59,16 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
   Status Init(ServerContext* context, const PathRequest* request,
                   BoolValue* response) override {
     response->set_bool_(emu.load_core(request->path().c_str()));
+    for(auto & t : emu.input_desc) {
+      emu_keys.push_back(std::pair<int, std::string>(t.id, t.description));
+    }
+
     return Status::OK;
   }
 
   Status Deinit(ServerContext* context, const Void* request,
                   BoolValue* response) override {
     response->set_bool_(emu.unload_core());
-
-    for(auto & t : emu.input_desc) {
-      emu_keys.push_back(std::pair<int, std::string>(t.id, t.description));
-    }
 
     return Status::OK;
   }
