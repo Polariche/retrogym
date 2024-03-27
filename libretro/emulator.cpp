@@ -185,7 +185,7 @@ bool Core::assign_callback(unsigned callback, void* func) {
     return true;
 }
 
-bool Emulator::core_load(const char* core_path) {
+bool Emulator::load_core(const char* core_path) {
     _e = this;
 
     core.assign_callback(CALLBACK_SET_ENVIRONMENT, (void*) default_env_cb);
@@ -202,12 +202,12 @@ bool Emulator::core_load(const char* core_path) {
     return true;
 }
 
-bool Emulator::core_unload() {
+bool Emulator::unload_core() {
     core.deinit();
     return true;
 }
 
-bool Emulator::game_load(const char* game_path) {
+bool Emulator::load_game(const char* game_path) {
     struct retro_system_info system = {
       0, 0, 0, false, false
     };
@@ -257,12 +257,12 @@ bool Emulator::game_load(const char* game_path) {
     return true;
 }
 
-bool Emulator::game_unload() {
+bool Emulator::unload_game() {
     core.retro_unload_game();
     return false;
 }
 
-bool Emulator::state_load(const char* state_path) {
+bool Emulator::load_state(const char* state_path) {
     size_t size = core.retro_serialize_size();
     FILE * file=NULL;
     void* data = malloc(size);
@@ -287,7 +287,7 @@ bool Emulator::state_load(const char* state_path) {
 }
 
 
-bool Emulator::state_save(const char* state_path) {
+bool Emulator::save_state(const char* state_path) {
     
     size_t size = core.retro_serialize_size();
     FILE * file=NULL;

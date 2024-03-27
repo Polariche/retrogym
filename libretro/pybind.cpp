@@ -18,16 +18,16 @@ struct PyEmulator {
     py::list li;
 
     bool init(const char* core_path) {
-        return emu.core_load(core_path);
+        return emu.load_core(core_path);
     }
 
     bool deinit() {
-        emu.core_unload();
+        emu.unload_core();
         return true;
     }
 
     bool load_game(const char* game_path) {
-        if (!emu.game_load(game_path))
+        if (!emu.load_game(game_path))
             return false;
         
         for(auto & t : emu.input_desc) {
@@ -39,15 +39,15 @@ struct PyEmulator {
     }
 
     bool unload_game() {
-        return emu.game_unload();
+        return emu.unload_game();
     }
 
     bool load_state(const char* state_path) {
-        return emu.state_load(state_path);
+        return emu.load_state(state_path);
     }
 
     bool save_state(const char* state_path) {
-        return emu.state_save(state_path);
+        return emu.save_state(state_path);
     }
 
     bool run() {

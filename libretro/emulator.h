@@ -89,10 +89,10 @@ class Emulator {
         std::vector<retro_input_descriptor> input_desc;
         unsigned pixel_format;
 
-        bool core_load(const char* core_path);
-        bool core_unload();
-        bool game_load(const char* game_path);
-        bool game_unload();
-        bool state_load(const char* state_path);
-        bool state_save(const char* state_path);
+        bool load_core(const char* core_path);
+        bool unload_core();
+        bool load_game(const char* game_path);
+        bool unload_game();
+        bool load_state(const char* state_path);
+        bool save_state(const char* state_path);
 };
