@@ -54,6 +54,7 @@ class RetroEnv(gym.Env, EzPickle):
         if config.actions is not None:
             self.keys = [k for k in self.keys if k[1] in config.actions]     # use only directional keys
 
+        #print(self.keys)
         self.player_action = -1
 
         self.action_space = spaces.Discrete(len(self.keys))
@@ -104,8 +105,6 @@ class RetroEnv(gym.Env, EzPickle):
         else:
             print(f"'{self.state}' doesn't exist; skip loading")
         obs, _, _, _, lab = self.step(-1)
-
-        print("reset!")
 
         return obs, lab
     

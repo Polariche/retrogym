@@ -49,6 +49,12 @@ class SetKeyRequest(_message.Message):
     value: bool
     def __init__(self, id: _Optional[int] = ..., value: bool = ...) -> None: ...
 
+class ImgResponse(_message.Message):
+    __slots__ = ("data",)
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    data: bytes
+    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+
 class MemorySizeRequest(_message.Message):
     __slots__ = ("id",)
     ID_FIELD_NUMBER: _ClassVar[int]

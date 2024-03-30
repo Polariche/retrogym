@@ -37,7 +37,7 @@ service GRPCEmulator {
   rpc GetKeys (Void) returns (KeysResponse) {}
   rpc SetKey (SetKeyRequest) returns (Void) {}
 
-  // rpc GetVideo
+  rpc GetVideo (Void) returns (ImgResponse) {}
   rpc GetMemorySize (MemorySizeRequest) returns (MemorySizeResponse) {}
   rpc GetMemoryData (MemoryDataRequest) returns (MemoryDataResponse) {}
 }
@@ -71,6 +71,9 @@ message SetKeyRequest {
   bool value = 2;
 }
 
+message ImgResponse {
+  bytes data = 1;
+}
 
 message MemorySizeRequest {
   uint32 id = 1;

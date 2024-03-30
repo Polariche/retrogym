@@ -218,6 +218,9 @@ bool Emulator::load_game(const char* game_path) {
       {60.0f, 10000.0f}           // timing
     };
     
+    input_desc.clear();
+    keys.clear();
+    
     core.retro_get_system_info(&system);
 
     FILE * file=NULL;
@@ -264,6 +267,13 @@ bool Emulator::load_game(const char* game_path) {
 
 bool Emulator::unload_game() {
     core.retro_unload_game();
+
+    width = 0;
+    height = 0;
+    
+    input_desc.clear();
+    keys.clear();
+
     return false;
 }
 

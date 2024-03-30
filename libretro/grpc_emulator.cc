@@ -44,6 +44,7 @@ using retrogym::Void;
 using retrogym::Key;
 using retrogym::KeysResponse;
 using retrogym::SetKeyRequest;
+using retrogym::ImgResponse;
 using retrogym::MemorySizeRequest;
 using retrogym::MemoryDataRequest;
 using retrogym::MemorySizeResponse;
@@ -54,6 +55,11 @@ using retrogym::MemoryDataResponse;
 // Logic and data behind the server's behavior.
 class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
   Emulator emu;
+
+  void onClose() {
+    emu.unload_game();
+    emu.deinit();
+  }
 
   Status Init(ServerContext* context, const PathRequest* request,
                   BoolValue* response) override {
@@ -122,6 +128,8 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
 
     std::vector<std::pair<int, std::string>> emu_keys = emu.get_keys();
 
+    //*response.mutable_keys() = {emu_keys.begin(), emu_keys.end()};
+    
     for(auto & k : emu_keys) {
       Key* key = response->add_keys();
       key->set_id(k.first);
@@ -134,6 +142,12 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
   Status SetKey(ServerContext* context, const SetKeyRequest* request,
                   Void* response) override {
     emu.set_key(request->id(), request->value());
+    return Status::OK;
+  }
+
+  Status GetVideo(ServerContext* context, const Void* request,
+                  ImgResponse* response) override {
+    response->set_data((uint16_t*) emu.get_video(), emu.get_width() * emu.get_height() * sizeof(uint16_t));
     return Status::OK;
   }
 
@@ -170,6 +184,8 @@ void RunServer(uint16_t port) {
   std::cout << "Server listening on " << server_address << std::endl;
 
   server->Wait();
+
+  // TODO: if a connection has closed, 
 }
 
 int main(int argc, char** argv) {

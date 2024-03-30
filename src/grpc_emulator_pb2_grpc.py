@@ -75,6 +75,11 @@ class GRPCEmulatorStub(object):
                 request_serializer=grpc__emulator__pb2.SetKeyRequest.SerializeToString,
                 response_deserializer=grpc__emulator__pb2.Void.FromString,
                 )
+        self.GetVideo = channel.unary_unary(
+                '/retrogym.GRPCEmulator/GetVideo',
+                request_serializer=grpc__emulator__pb2.Void.SerializeToString,
+                response_deserializer=grpc__emulator__pb2.ImgResponse.FromString,
+                )
         self.GetMemorySize = channel.unary_unary(
                 '/retrogym.GRPCEmulator/GetMemorySize',
                 request_serializer=grpc__emulator__pb2.MemorySizeRequest.SerializeToString,
@@ -163,9 +168,14 @@ class GRPCEmulatorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetVideo(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetMemorySize(self, request, context):
-        """rpc GetVideo
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -238,6 +248,11 @@ def add_GRPCEmulatorServicer_to_server(servicer, server):
                     servicer.SetKey,
                     request_deserializer=grpc__emulator__pb2.SetKeyRequest.FromString,
                     response_serializer=grpc__emulator__pb2.Void.SerializeToString,
+            ),
+            'GetVideo': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetVideo,
+                    request_deserializer=grpc__emulator__pb2.Void.FromString,
+                    response_serializer=grpc__emulator__pb2.ImgResponse.SerializeToString,
             ),
             'GetMemorySize': grpc.unary_unary_rpc_method_handler(
                     servicer.GetMemorySize,
@@ -461,6 +476,23 @@ class GRPCEmulator(object):
         return grpc.experimental.unary_unary(request, target, '/retrogym.GRPCEmulator/SetKey',
             grpc__emulator__pb2.SetKeyRequest.SerializeToString,
             grpc__emulator__pb2.Void.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetVideo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/retrogym.GRPCEmulator/GetVideo',
+            grpc__emulator__pb2.Void.SerializeToString,
+            grpc__emulator__pb2.ImgResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
