@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <map>
 #include <vector>
+#include <string>
 
 #include "libretro.h"
 
@@ -63,6 +64,16 @@ class Core {
 
 class Emulator {
     private:
+        Core core;
+
+        int width, height;
+        const void* video_data = nullptr;
+        size_t video_pitch;
+        std::map<int16_t, bool> input;
+        std::vector<retro_input_descriptor> input_desc;
+        std::vector<std::pair<int, std::string>> keys;
+        unsigned pixel_format;
+
         static void default_log_cb(enum retro_log_level level, const char * fmt, ...);
         static bool default_env_cb(unsigned cmd, void * data);
         static void default_video_cb(
@@ -80,19 +91,19 @@ class Emulator {
         static size_t default_audio_b_cb(const int16_t * data, size_t frames);
     
     public:
-        Core core;
-
-        int width, height;
-        const void* video_data = nullptr;
-        size_t video_pitch;
-        std::map<int16_t, bool> input;
-        std::vector<retro_input_descriptor> input_desc;
-        unsigned pixel_format;
-
-        bool load_core(const char* core_path);
-        bool unload_core();
+        bool init(const char* core_path);
+        bool deinit();
         bool load_game(const char* game_path);
         bool unload_game();
         bool load_state(const char* state_path);
         bool save_state(const char* state_path);
+        bool run();
+        bool reset();
+        int get_width();
+        int get_height();
+        void* get_video();
+        std::vector<std::pair<int, std::string>> get_keys();
+        void set_key(int id, bool value);
+        size_t get_memory_size(unsigned id);
+        uint8_t get_memory_data(unsigned id, unsigned addr);
 };

@@ -54,21 +54,17 @@ using retrogym::MemoryDataResponse;
 // Logic and data behind the server's behavior.
 class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
   Emulator emu;
-  std::vector<std::pair<int, std::string>> emu_keys;
 
   Status Init(ServerContext* context, const PathRequest* request,
                   BoolValue* response) override {
-    response->set_bool_(emu.load_core(request->path().c_str()));
-    for(auto & t : emu.input_desc) {
-      emu_keys.push_back(std::pair<int, std::string>(t.id, t.description));
-    }
+    response->set_bool_(emu.init(request->path().c_str()));
 
     return Status::OK;
   }
 
   Status Deinit(ServerContext* context, const Void* request,
                   BoolValue* response) override {
-    response->set_bool_(emu.unload_core());
+    response->set_bool_(emu.deinit());
 
     return Status::OK;
   }
@@ -99,32 +95,33 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
 
   Status Run(ServerContext* context, const Void* request,
                   BoolValue* response) override {
-    emu.core.retro_run();
-    response->set_bool_(true);
+    response->set_bool_(emu.run());
     return Status::OK;
   }
 
   Status Reset(ServerContext* context, const Void* request,
                   BoolValue* response) override {
-    emu.core.retro_reset();
-    response->set_bool_(true);
+    response->set_bool_(emu.reset());
     return Status::OK;
   }
 
   Status Width(ServerContext* context, const Void* request,
                   Int32Value* response) override {
-    response->set_int32(emu.width);
+    response->set_int32(emu.get_width());
     return Status::OK;
   }
 
   Status Height(ServerContext* context, const Void* request,
                   Int32Value* response) override {
-    response->set_int32(emu.height);
+    response->set_int32(emu.get_height());
     return Status::OK;
   }
 
   Status GetKeys(ServerContext* context, const Void* request,
                   KeysResponse* response) override {
+
+    std::vector<std::pair<int, std::string>> emu_keys = emu.get_keys();
+
     for(auto & k : emu_keys) {
       Key* key = response->add_keys();
       key->set_id(k.first);
@@ -136,14 +133,14 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
 
   Status SetKey(ServerContext* context, const SetKeyRequest* request,
                   Void* response) override {
-    emu.input[request->id()] = request->value();
+    emu.set_key(request->id(), request->value());
     return Status::OK;
   }
 
   Status GetMemorySize(ServerContext* context, const MemorySizeRequest* request,
                   MemorySizeResponse* response) override {
     unsigned id = request->id();
-    response->set_size(emu.core.retro_get_memory_size(id));
+    response->set_size(emu.get_memory_size(id));
     return Status::OK;
   }
 
@@ -151,7 +148,7 @@ class GRPCEmulatorServiceImpl final : public GRPCEmulator::Service {
                   MemoryDataResponse* response) override {
     unsigned id = request->id();
     unsigned addr = request->addr();
-    response->set_data(((uint8_t*)emu.core.retro_get_memory_data(id))[addr]);
+    response->set_data(emu.get_memory_data(id, addr));
     return Status::OK;
   }
 

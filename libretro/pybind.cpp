@@ -18,11 +18,11 @@ struct PyEmulator {
     py::list li;
 
     bool init(const char* core_path) {
-        return emu.load_core(core_path);
+        return emu.init(core_path);
     }
 
     bool deinit() {
-        emu.unload_core();
+        emu.deinit();
         return true;
     }
 
@@ -30,8 +30,9 @@ struct PyEmulator {
         if (!emu.load_game(game_path))
             return false;
         
-        for(auto & t : emu.input_desc) {
-            py::tuple tup = py::make_tuple(t.id, t.description);
+        std::vector<std::pair<int, std::string>> emu_keys = emu.get_keys();
+        for(auto & t : emu_keys) {
+            py::tuple tup = py::make_tuple(t.first, t.second);
             li.append(tup);
         }
 
@@ -51,21 +52,19 @@ struct PyEmulator {
     }
 
     bool run() {
-        emu.core.retro_run();
-        return true;
+        return emu.run();
     }
 
     bool reset() {
-        emu.core.retro_reset();
-        return true;
+        return emu.reset();
     }
 
     int width() {
-        return emu.width;
+        return emu.get_width();
     }
 
     int height() {
-        return emu.height;
+        return emu.get_height();
     }
 
     py::list get_keys() {
@@ -73,26 +72,26 @@ struct PyEmulator {
     }
 
     void set_key(int id, bool value) {
-        emu.input[id] = value;
+        emu.set_key(id, value);
     }
 
     py::array_t<uint16_t> get_video() {
-        int w = emu.width;
-        int h = emu.height;
+        int w = emu.get_width();
+        int h = emu.get_height();
 
         py::array_t<uint16_t> arr({ w*h } );
 
         uint16_t* data = arr.mutable_data();
-        memcpy(data, emu.video_data, w*h*sizeof(uint16_t));
+        memcpy(data, emu.get_video(), w*h*sizeof(uint16_t));
         return arr;
     } 
 
     size_t get_memory_size(unsigned id) {
-        return (size_t) emu.core.retro_get_memory_size(id);
+        return emu.get_memory_size(id);
     }
 
     uint8_t get_memory_data(unsigned id, unsigned addr) {
-        return ((uint8_t*)emu.core.retro_get_memory_data(id))[addr];
+        return emu.get_memory_data(id, addr);
     }
     
 };

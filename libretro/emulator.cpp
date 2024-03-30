@@ -185,7 +185,7 @@ bool Core::assign_callback(unsigned callback, void* func) {
     return true;
 }
 
-bool Emulator::load_core(const char* core_path) {
+bool Emulator::init(const char* core_path) {
     _e = this;
 
     core.assign_callback(CALLBACK_SET_ENVIRONMENT, (void*) default_env_cb);
@@ -199,10 +199,11 @@ bool Emulator::load_core(const char* core_path) {
         // TODO put error msg
         return false;
     }
+
     return true;
 }
 
-bool Emulator::unload_core() {
+bool Emulator::deinit() {
     core.deinit();
     return true;
 }
@@ -253,6 +254,10 @@ bool Emulator::load_game(const char* game_path) {
     // get width and height
     width = av.geometry.base_width;
     height = av.geometry.base_height;
+
+    for(auto & t : input_desc) {
+        keys.push_back(std::pair<int, std::string>(t.id, t.description));
+    }
 
     return true;
 }
@@ -310,4 +315,38 @@ bool Emulator::save_state(const char* state_path) {
 
     free(data);
     return success;
+}
+
+bool Emulator::run() {
+    core.retro_run();
+    return true;
+}
+
+bool Emulator::reset() {
+    core.retro_reset();
+    return true;
+}
+
+int Emulator::get_width() {
+    return width;
+}
+
+int Emulator::get_height() {
+    return height;
+}
+
+std::vector<std::pair<int, std::string>> Emulator::get_keys() {
+    return keys;
+}
+
+void Emulator::set_key(int id, bool value) {
+    input[id] = value;
+}
+
+size_t Emulator::get_memory_size(unsigned id) {
+    return (size_t) (core.retro_get_memory_size(id));
+}
+
+uint8_t Emulator::get_memory_data(unsigned id, unsigned addr) {
+    return ((uint8_t*) core.retro_get_memory_data(id))[addr];
 }
