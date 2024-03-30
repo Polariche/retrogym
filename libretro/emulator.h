@@ -101,7 +101,7 @@ class Emulator {
         bool reset();
         int get_width();
         int get_height();
-        void* get_video();
+        const void* get_video();
         std::vector<std::pair<int, std::string>> get_keys();
         void set_key(int id, bool value);
         size_t get_memory_size(unsigned id);

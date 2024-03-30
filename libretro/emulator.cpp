@@ -335,6 +335,10 @@ int Emulator::get_height() {
     return height;
 }
 
+const void* Emulator::get_video() {
+  return video_data;
+}
+
 std::vector<std::pair<int, std::string>> Emulator::get_keys() {
     return keys;
 }

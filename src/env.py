@@ -11,6 +11,7 @@ import rewards
 import endings
 import os 
 from models import ConfigModel
+from remote_emulator import RemoteEmulator
 
 ObsType = TypeVar("ObsType")
 ActType = TypeVar("ActType")
@@ -27,6 +28,7 @@ class RetroEnv(gym.Env, EzPickle):
         self,
         config: ConfigModel,
         render_mode: Optional[str] = None,
+        remote: Optional[str] = None,
     ):
         EzPickle.__init__(
             self,
@@ -37,7 +39,12 @@ class RetroEnv(gym.Env, EzPickle):
             render_mode,
         )
 
-        self.emu = libretro.Emulator()
+        remote = "0.0.0.0:50001"
+        if remote is not None:
+            self.emu = RemoteEmulator(remote)
+        else: 
+            self.emu = libretro.Emulator()
+            
         self.emu.init(config.core)
         self.emu.load_game(config.rom)
         self.config = config
@@ -97,6 +104,8 @@ class RetroEnv(gym.Env, EzPickle):
         else:
             print(f"'{self.state}' doesn't exist; skip loading")
         obs, _, _, _, lab = self.step(-1)
+
+        print("reset!")
 
         return obs, lab
     
